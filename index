@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Strength Tracker — Phase 1</title>
+  <meta name="theme-color" content="#111111" />
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --panel: #18181b;
+      --panel-2: #222227;
+      --text: #f5f5f5;
+      --muted: #a1a1aa;
+      --border: #303036;
+      --accent: #ffffff;
+      --danger: #ff6b6b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 18px 14px 40px;
+    }
+
+    .app {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin: 0 0 8px;
+      line-height: 1.05;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .row.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #666;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #111;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(255,107,107,0.35);
+    }
+
+    .button-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 14px;
+    }
+
+    .exercise-list,
+    .routine-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .exercise-item,
+    .routine-item {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .exercise-top,
+    .routine-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .exercise-name,
+    .routine-name {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .pill {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 9px;
+      margin-right: 6px;
+      margin-top: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .controls button {
+      width: auto;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 18px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.01);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+    }
+
+    .home-routines button {
+      width: 100%;
+      text-align: left;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      border-radius: 16px;
+      display: block;
+    }
+
+    .home-routines button + button {
+      margin-top: 10px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .superset-box {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .row.two, .row.three, .button-row {
+        grid-template-columns: 1fr;
+      }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="homeScreen" class="screen active">
+      <h1>Strength Tracker</h1>
+      <div class="sub">Phase 1: create your custom routine templates. Build push, pull, legs, or any split you want.</div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>Start Here</h2>
+        </div>
+        <button id="goToBuilderBtn">Create or Edit Routines</button>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>Your Routines</h2>
+        </div>
+        <div id="homeRoutineList" class="home-routines"></div>
+      </div>
+    </div>
+
+    <div id="builderScreen" class="screen">
+      <div class="card">
+        <div class="section-title">
+          <h2>Routine Builder</h2>
+          <button id="backHomeBtn" class="secondary" style="width:auto; padding:10px 12px;">Back</button>
+        </div>
+
+        <div class="row single">
+          <div>
+            <label for="routineName">Routine Name</label>
+            <input id="routineName" type="text" placeholder="Push Day" />
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="saveRoutineBtn">Save Routine</button>
+          <button id="clearRoutineBtn" class="secondary">New Routine</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Add Exercise</h2>
+        <div class="row two">
+          <div>
+            <label for="exerciseType">Exercise Type</label>
+            <select id="exerciseType">
+              <option value="single">Single Exercise</option>
+              <option value="superset">Superset</option>
+            </select>
+          </div>
+          <div>
+            <label for="targetSets">Target Sets</label>
+            <input id="targetSets" type="number" min="1" step="1" placeholder="3" />
+          </div>
+          <div>
+            <label for="targetReps">Target Reps</label>
+            <input id="targetReps" type="text" placeholder="8 or 8-10" />
+          </div>
+        </div>
+
+        <div id="singleExerciseFields" class="superset-box">
+          <div class="row single">
+            <div>
+              <label for="exerciseName">Exercise Name</label>
+              <input id="exerciseName" type="text" placeholder="Incline Dumbbell Press" />
+            </div>
+          </div>
+        </div>
+
+        <div id="supersetFields" class="superset-box hidden">
+          <div class="row two">
+            <div>
+              <label for="supersetNameA">Superset Lift A</label>
+              <input id="supersetNameA" type="text" placeholder="Cable Fly" />
+            </div>
+            <div>
+              <label for="supersetNameB">Superset Lift B</label>
+              <input id="supersetNameB" type="text" placeholder="Push-Up" />
+            </div>
+          </div>
+          <div class="muted" style="margin-top:10px;">This will be stored as one superset block with two separate lifts that you can both track later.</div>
+        </div>
+
+        <div class="button-row">
+          <button id="addExerciseBtn">Add Exercise</button>
+          <button id="resetExerciseBtn" class="secondary">Clear Exercise Fields</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Exercises in Routine</h2>
+        <div id="exerciseList" class="exercise-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Saved Routines</h2>
+        <div id="routineList" class="routine-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'strength-tracker-phase1-routines';
+
+    const homeScreen = document.getElementById('homeScreen');
+    const builderScreen = document.getElementById('builderScreen');
+
+    const goToBuilderBtn = document.getElementById('goToBuilderBtn');
+    const backHomeBtn = document.getElementById('backHomeBtn');
+
+    const routineNameInput = document.getElementById('routineName');
+    const exerciseTypeInput = document.getElementById('exerciseType');
+    const exerciseNameInput = document.getElementById('exerciseName');
+    const supersetNameAInput = document.getElementById('supersetNameA');
+    const supersetNameBInput = document.getElementById('supersetNameB');
+    const targetSetsInput = document.getElementById('targetSets');
+    const targetRepsInput = document.getElementById('targetReps');
+    const singleExerciseFields = document.getElementById('singleExerciseFields');
+    const supersetFields = document.getElementById('supersetFields');
+
+    const saveRoutineBtn = document.getElementById('saveRoutineBtn');
+    const clearRoutineBtn = document.getElementById('clearRoutineBtn');
+    const addExerciseBtn = document.getElementById('addExerciseBtn');
+    const resetExerciseBtn = document.getElementById('resetExerciseBtn');
+
+    const exerciseList = document.getElementById('exerciseList');
+    const routineList = document.getElementById('routineList');
+    const homeRoutineList = document.getElementById('homeRoutineList');
+
+    let currentRoutineId = null;
+    let draftExercises = [];
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatRoutineSummary(routine) {
+      const exercises = Array.isArray(routine.exercises) ? routine.exercises : [];
+      const supersetCount = exercises.filter(ex => ex.type === 'superset').length;
+      return `${exercises.length} exercise${exercises.length === 1 ? '' : 's'} saved${supersetCount ? ` • ${supersetCount} superset${supersetCount === 1 ? '' : 's'}` : ''}`;
+    }
+
+    function loadRoutines() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRoutines(routines) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+    }
+
+    function updateExerciseTypeUI() {
+      const isSuperset = exerciseTypeInput.value === 'superset';
+      singleExerciseFields.classList.toggle('hidden', isSuperset);
+      supersetFields.classList.toggle('hidden', !isSuperset);
+    }
+
+    function showScreen(screen) {
+      homeScreen.classList.remove('active');
+      builderScreen.classList.remove('active');
+      screen.classList.add('active');
+      updateExerciseTypeUI();
+      renderAll();
+    }
+
+    function clearExerciseFields() {
+      exerciseTypeInput.value = 'single';
+      exerciseNameInput.value = '';
+      supersetNameAInput.value = '';
+      supersetNameBInput.value = '';
+      targetSetsInput.value = '';
+      targetRepsInput.value = '';
+      updateExerciseTypeUI();
+      exerciseNameInput.focus();
+    }
+
+    function resetRoutineBuilder() {
+      currentRoutineId = null;
+      routineNameInput.value = '';
+      draftExercises = [];
+      clearExerciseFields();
+      renderDraftExercises();
+    }
+
+    function addExerciseToDraft() {
+      const type = exerciseTypeInput.value;
+      const targetSets = targetSetsInput.value.trim();
+      const targetReps = targetRepsInput.value.trim();
+
+      if (!targetSets) {
+        alert('Enter target sets.');
+        return;
+      }
+
+      if (type === 'single') {
+        const name = exerciseNameInput.value.trim();
+        if (!name) {
+          alert('Enter an exercise name.');
+          return;
+        }
+
+        draftExercises.push({
+          id: uid(),
+          type: 'single',
+          name,
+          targetSets,
+          targetReps
+        });
+      } else {
+        const nameA = supersetNameAInput.value.trim();
+        const nameB = supersetNameBInput.value.trim();
+
+        if (!nameA || !nameB) {
+          alert('Enter both lifts for the superset.');
+          return;
+        }
+
+        draftExercises.push({
+          id: uid(),
+          type: 'superset',
+          name: `${nameA} + ${nameB}`,
+          targetSets,
+          targetReps,
+          lifts: [
+            { id: uid(), name: nameA },
+            { id: uid(), name: nameB }
+          ]
+        });
+      }
+
+      clearExerciseFields();
+      renderDraftExercises();
+    }
+
+    function moveExercise(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= draftExercises.length) return;
+      [draftExercises[index], draftExercises[newIndex]] = [draftExercises[newIndex], draftExercises[index]];
+      renderDraftExercises();
+    }
+
+    function deleteExercise(id) {
+      draftExercises = draftExercises.filter(ex => ex.id !== id);
+      renderDraftExercises();
+    }
+
+    function renderDraftExercises() {
+      if (!draftExercises.length) {
+        exerciseList.innerHTML = '<div class="empty">No exercises yet. Add the first movement for this routine above.</div>';
+        return;
+      }
+
+      exerciseList.innerHTML = draftExercises.map((exercise, index) => {
+        const title = exercise.type === 'superset'
+          ? `${index + 1}. Superset: ${escapeHtml((exercise.lifts || []).map(l => l.name).join(' + '))}`
+          : `${index + 1}. ${escapeHtml(exercise.name)}`;
+
+        const subtext = exercise.type === 'superset'
+          ? `Target: ${escapeHtml(String(exercise.targetSets))} rounds × ${escapeHtml(exercise.targetReps || 'custom reps')} each`
+          : `Target: ${escapeHtml(String(exercise.targetSets))} sets × ${escapeHtml(exercise.targetReps || 'custom reps')}`;
+
+        const liftPills = exercise.type === 'superset'
+          ? `<div>${(exercise.lifts || []).map(lift => `<span class="pill">${escapeHtml(lift.name)}</span>`).join('')}</div>`
+          : '';
+
+        return `
+          <div class="exercise-item">
+            <div class="exercise-top">
+              <div>
+                <div class="exercise-name">${title}</div>
+                <div class="muted">${subtext}</div>
+                ${liftPills}
+              </div>
+            </div>
+            <div class="controls">
+              <button class="secondary" onclick="moveExercise(${index}, -1)">Move Up</button>
+              <button class="secondary" onclick="moveExercise(${index}, 1)">Move Down</button>
+              <button class="danger" onclick="deleteExercise('${exercise.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveCurrentRoutine() {
+      const name = routineNameInput.value.trim();
+      if (!name) {
+        alert('Enter a routine name.');
+        return;
+      }
+      if (!draftExercises.length) {
+        alert('Add at least one exercise.');
+        return;
+      }
+
+      const routines = loadRoutines();
+      const routinePayload = {
+        id: currentRoutineId || uid(),
+        name,
+        exercises: JSON.parse(JSON.stringify(draftExercises))
+      };
+
+      const existingIndex = routines.findIndex(r => r.id === routinePayload.id);
+      if (existingIndex >= 0) {
+        routines[existingIndex] = routinePayload;
+      } else {
+        routines.push(routinePayload);
+      }
+
+      saveRoutines(routines);
+      currentRoutineId = routinePayload.id;
+      renderAll();
+      alert('Routine saved.');
+    }
+
+    function editRoutine(id) {
+      const routine = loadRoutines().find(r => r.id === id);
+      if (!routine) return;
+      currentRoutineId = routine.id;
+      routineNameInput.value = routine.name;
+      draftExercises = JSON.parse(JSON.stringify(routine.exercises || []));
+      renderDraftExercises();
+      showScreen(builderScreen);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteRoutine(id) {
+      const routines = loadRoutines().filter(r => r.id !== id);
+      saveRoutines(routines);
+      if (currentRoutineId === id) resetRoutineBuilder();
+      renderAll();
+    }
+
+    function renderSavedRoutines() {
+      const routines = loadRoutines();
+      if (!routines.length) {
+        routineList.innerHTML = '<div class="empty">No saved routines yet. Build your first template above.</div>';
+        return;
+      }
+
+      routineList.innerHTML = routines.map(routine => `
+        <div class="routine-item">
+          <div class="routine-top">
+            <div>
+              <div class="routine-name">${escapeHtml(routine.name)}</div>
+              <div class="muted">${escapeHtml(formatRoutineSummary(routine))}</div>
+            </div>
+          </div>
+          <div>
+            ${(routine.exercises || []).slice(0, 5).map(ex => {
+              const label = ex.type === 'superset'
+                ? `Superset: ${(ex.lifts || []).map(l => l.name).join(' + ')}`
+                : ex.name;
+              return `<span class="pill">${escapeHtml(label)}</span>`;
+            }).join('')}
+            ${(routine.exercises || []).length > 5 ? '<span class="pill">…</span>' : ''}
+          </div>
+          <div class="controls">
+            <button class="secondary" onclick="editRoutine('${routine.id}')">Edit</button>
+            <button class="danger" onclick="deleteRoutine('${routine.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHomeRoutines() {
+      const routines = loadRoutines();
+      if (!routines.length) {
+        homeRoutineList.innerHTML = '<div class="empty">No routines yet. Tap “Create or Edit Routines” to make your first one.</div>';
+        return;
+      }
+
+      homeRoutineList.innerHTML = routines.map(routine => `
+        <button onclick="editRoutine('${routine.id}')">
+          <div style="font-size:17px; font-weight:700; margin-bottom:4px;">${escapeHtml(routine.name)}</div>
+          <div class="muted">${escapeHtml(formatRoutineSummary(routine))}</div>
+        </button>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderDraftExercises();
+      renderSavedRoutines();
+      renderHomeRoutines();
+    }
+
+    function runDevTests() {
+      console.assert(escapeHtml('<script>') === '&lt;script&gt;', 'escapeHtml should escape angle brackets');
+      console.assert(formatRoutineSummary({ exercises: [] }) === '0 exercises saved', 'summary should handle empty routines');
+      console.assert(
+        formatRoutineSummary({ exercises: [{ type: 'single' }, { type: 'superset' }] }) === '2 exercises saved • 1 superset',
+        'summary should count supersets correctly'
+      );
+    }
+
+    window.moveExercise = moveExercise;
+    window.deleteExercise = deleteExercise;
+    window.editRoutine = editRoutine;
+    window.deleteRoutine = deleteRoutine;
+
+    goToBuilderBtn.addEventListener('click', () => showScreen(builderScreen));
+    backHomeBtn.addEventListener('click', () => showScreen(homeScreen));
+    addExerciseBtn.addEventListener('click', addExerciseToDraft);
+    resetExerciseBtn.addEventListener('click', clearExerciseFields);
+    exerciseTypeInput.addEventListener('change', updateExerciseTypeUI);
+    saveRoutineBtn.addEventListener('click', saveCurrentRoutine);
+    clearRoutineBtn.addEventListener('click', resetRoutineBuilder);
+
+    updateExerciseTypeUI();
+    renderAll();
+    runDevTests();
+  </script>
+</body>
+</html>
