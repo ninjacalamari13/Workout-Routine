@@ -460,6 +460,20 @@
             </div>
           </div>
 
+          <div class="card" style="background: var(--panel-2); margin-bottom: 14px; padding: 14px;">
+            <div class="row two">
+              <div>
+                <label for="sessionDateInput">Workout Date</label>
+                <input id="sessionDateInput" type="date" />
+              </div>
+              <div>
+                <label for="sessionBodyWeightInput">Body Weight (optional)</label>
+                <input id="sessionBodyWeightInput" type="number" step="0.1" placeholder="185.4" />
+              </div>
+            </div>
+            <div class="mini-note">Defaults to today, but you can edit the date before saving.</div>
+          </div>
+
           <div class="button-row">
             <button id="saveWorkoutBtn" class="success">Save Workout</button>
             <button id="discardWorkoutBtn" class="danger">Discard Workout</button>
@@ -526,6 +540,8 @@
     const sessionExerciseList = document.getElementById('sessionExerciseList');
     const saveWorkoutBtn = document.getElementById('saveWorkoutBtn');
     const discardWorkoutBtn = document.getElementById('discardWorkoutBtn');
+    const sessionDateInput = document.getElementById('sessionDateInput');
+    const sessionBodyWeightInput = document.getElementById('sessionBodyWeightInput');
 
     const bodyWeightInput = document.getElementById('bodyWeightInput');
     const saveWeightBtn = document.getElementById('saveWeightBtn');
@@ -534,6 +550,7 @@
     let currentRoutineId = null;
     let draftExercises = [];
     let activeSession = null;
+    let editingSessionId = null;
 
     function uid() {
       return Math.random().toString(36).slice(2, 10);
@@ -800,6 +817,7 @@
       const routine = loadRoutines().find(r => r.id === routineId);
       if (!routine) return;
 
+      editingSessionId = null;
       activeSession = {
         id: uid(),
         date: todayISO(),
@@ -862,7 +880,9 @@
       noSessionState.classList.add('hidden');
       activeSessionContent.classList.remove('hidden');
       sessionTitle.textContent = activeSession.routineName;
-      sessionMeta.textContent = `${formatDate(activeSession.date)} • ${activeSession.exercises.length} exercise${activeSession.exercises.length === 1 ? '' : 's'}`;
+      sessionMeta.textContent = `${formatDate(activeSession.date)} • ${activeSession.exercises.length} exercise${activeSession.exercises.length === 1 ? '' : 's'}${editingSessionId ? ' • editing saved workout' : ''}`;
+      sessionDateInput.value = activeSession.date || todayISO();
+      sessionBodyWeightInput.value = activeSession.bodyWeight || '';
 
       sessionExerciseList.innerHTML = activeSession.exercises.map((exercise, exerciseIndex) => {
         const header = exercise.type === 'superset'
@@ -938,22 +958,48 @@
 
     function discardWorkout() {
       activeSession = null;
+      editingSessionId = null;
       renderActiveSession();
     }
 
     function saveWorkout() {
       if (!activeSession) return;
+
+      const chosenDate = sessionDateInput.value || todayISO();
+      activeSession.date = chosenDate;
+      activeSession.bodyWeight = sessionBodyWeightInput.value.trim();
+
       const sessions = loadSessions();
-      sessions.unshift(JSON.parse(JSON.stringify(activeSession)));
+      const sessionPayload = JSON.parse(JSON.stringify(activeSession));
+
+      if (editingSessionId) {
+        const index = sessions.findIndex(session => session.id === editingSessionId);
+        if (index >= 0) {
+          sessions[index] = sessionPayload;
+        } else {
+          sessions.unshift(sessionPayload);
+        }
+      } else {
+        sessions.unshift(sessionPayload);
+      }
+
       saveSessions(sessions);
+
+      if (activeSession.bodyWeight) {
+        const weights = loadWeights().filter(item => item.date !== chosenDate);
+        weights.unshift({ date: chosenDate, weight: activeSession.bodyWeight });
+        saveWeights(weights);
+      }
+
       activeSession = null;
+      editingSessionId = null;
       renderAll();
       showScreen('history');
       alert('Workout saved.');
     }
 
     function renderHistory() {
-      const sessions = loadSessions();
+      const sessions = loadSessions().sort((a, b) => b.date.localeCompare(a.date));
       if (!sessions.length) {
         historyList.innerHTML = '<div class="empty">No workouts saved yet. Start a routine from Home.</div>';
         return;
@@ -964,7 +1010,7 @@
           <div class="history-top">
             <div>
               <div class="history-name">${escapeHtml(session.routineName)}</div>
-              <div class="muted">${formatDate(session.date)} • ${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'}</div>
+              <div class="muted">${formatDate(session.date)} • ${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'}${session.bodyWeight ? ` • ${escapeHtml(session.bodyWeight)} lb` : ''}</div>
             </div>
           </div>
           <div>
@@ -974,8 +1020,30 @@
             }).join('')}
             ${(session.exercises || []).length > 4 ? '<span class="pill">…</span>' : ''}
           </div>
+          <div class="controls">
+            <button class="secondary" onclick="editHistoryWorkout('${session.id}')">Edit</button>
+            <button class="danger" onclick="deleteHistoryWorkout('${session.id}')">Delete</button>
+          </div>
         </div>
       `).join('');
+    }
+
+    function editHistoryWorkout(sessionId) {
+      const session = loadSessions().find(item => item.id === sessionId);
+      if (!session) return;
+      editingSessionId = sessionId;
+      activeSession = JSON.parse(JSON.stringify(session));
+      showScreen('session');
+    }
+
+    function deleteHistoryWorkout(sessionId) {
+      const sessions = loadSessions().filter(item => item.id !== sessionId);
+      saveSessions(sessions);
+      if (editingSessionId === sessionId) {
+        activeSession = null;
+        editingSessionId = null;
+      }
+      renderHistory();
     }
 
     function getWeightForDate(date) {
@@ -1027,6 +1095,7 @@
         'summary should count supersets correctly'
       );
       console.assert(buildLoggedSets(3).length === 3, 'set builder should create correct number of sets');
+      console.assert(todayISO().length === 10, 'todayISO should return YYYY-MM-DD');
     }
 
     window.moveExercise = moveExercise;
@@ -1035,6 +1104,8 @@
     window.deleteRoutine = deleteRoutine;
     window.startWorkout = startWorkout;
     window.updateSetField = updateSetField;
+    window.editHistoryWorkout = editHistoryWorkout;
+    window.deleteHistoryWorkout = deleteHistoryWorkout;
 
     navButtons.home.addEventListener('click', () => showScreen('home'));
     navButtons.builder.addEventListener('click', () => showScreen('builder'));
@@ -1049,6 +1120,19 @@
     saveWorkoutBtn.addEventListener('click', saveWorkout);
     discardWorkoutBtn.addEventListener('click', discardWorkout);
     saveWeightBtn.addEventListener('click', saveBodyWeight);
+    sessionDateInput.addEventListener('input', () => {
+      if (!activeSession) return;
+      activeSession.date = sessionDateInput.value || todayISO();
+      const suggestedWeight = getWeightForDate(activeSession.date);
+      if (!sessionBodyWeightInput.value && suggestedWeight) {
+        sessionBodyWeightInput.value = suggestedWeight;
+      }
+      renderActiveSession();
+    });
+    sessionBodyWeightInput.addEventListener('input', () => {
+      if (!activeSession) return;
+      activeSession.bodyWeight = sessionBodyWeightInput.value;
+    });
 
     updateExerciseTypeUI();
     renderAll();
