@@ -286,23 +286,6 @@
 
       <div class="card">
         <h2>Add Exercise</h2>
-        <div class="row two">
-          <div>
-            <label for="exerciseType">Exercise Type</label>
-            <select id="exerciseType">
-              <option value="single">Single Exercise</option>
-              <option value="superset">Superset</option>
-            </select>
-          </div>
-          <div>
-            <label for="targetSets">Target Sets</label>
-            <input id="targetSets" type="number" min="1" step="1" placeholder="3" />
-          </div>
-          <div>
-            <label for="targetReps">Target Reps</label>
-            <input id="targetReps" type="text" placeholder="8 or 8-10" />
-          </div>
-        </div>
 
         <div id="singleExerciseFields" class="superset-box">
           <div class="row single">
@@ -325,6 +308,24 @@
             </div>
           </div>
           <div class="muted" style="margin-top:10px;">This will be stored as one superset block with two separate lifts that you can both track later.</div>
+        </div>
+
+        <div class="row two" style="margin-top: 12px;">
+          <div>
+            <label for="exerciseType">Exercise Type</label>
+            <select id="exerciseType">
+              <option value="single">Single Exercise</option>
+              <option value="superset">Superset</option>
+            </select>
+          </div>
+          <div>
+            <label for="targetSets">Target Sets</label>
+            <input id="targetSets" type="number" min="1" step="1" placeholder="3" />
+          </div>
+          <div>
+            <label for="targetReps">Target Reps</label>
+            <input id="targetReps" type="text" placeholder="8 or 8-10" />
+          </div>
         </div>
 
         <div class="button-row">
