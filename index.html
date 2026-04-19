@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Strength Tracker — Phase 1</title>
+  <title>Strength Tracker — Phase 2</title>
   <meta name="theme-color" content="#111111" />
   <style>
     :root {
@@ -15,6 +15,7 @@
       --border: #303036;
       --accent: #ffffff;
       --danger: #ff6b6b;
+      --success: #86efac;
     }
 
     * { box-sizing: border-box; }
@@ -79,7 +80,8 @@
     }
 
     input,
-    select {
+    select,
+    textarea {
       width: 100%;
       background: var(--panel-2);
       color: var(--text);
@@ -91,7 +93,8 @@
     }
 
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       border-color: #666;
     }
 
@@ -118,6 +121,11 @@
       border: 1px solid rgba(255,107,107,0.35);
     }
 
+    button.success {
+      background: var(--success);
+      color: #111;
+    }
+
     .button-row {
       display: grid;
       gap: 10px;
@@ -126,13 +134,18 @@
     }
 
     .exercise-list,
-    .routine-list {
+    .routine-list,
+    .history-list,
+    .home-routines,
+    .session-list {
       display: grid;
       gap: 10px;
     }
 
     .exercise-item,
-    .routine-item {
+    .routine-item,
+    .history-item,
+    .session-item {
       background: var(--panel-2);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -140,7 +153,9 @@
     }
 
     .exercise-top,
-    .routine-top {
+    .routine-top,
+    .history-top,
+    .session-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -149,7 +164,9 @@
     }
 
     .exercise-name,
-    .routine-name {
+    .routine-name,
+    .history-name,
+    .session-name {
       font-size: 17px;
       font-weight: 700;
     }
@@ -205,21 +222,6 @@
       margin: 0;
     }
 
-    .home-routines button {
-      width: 100%;
-      text-align: left;
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 14px 16px;
-      border-radius: 16px;
-      display: block;
-    }
-
-    .home-routines button + button {
-      margin-top: 10px;
-    }
-
     .screen { display: none; }
     .screen.active { display: block; }
 
@@ -231,13 +233,101 @@
       background: rgba(255,255,255,0.02);
     }
 
-    .hidden {
-      display: none;
+    .hidden { display: none; }
+
+    .nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .nav button {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 11px 10px;
+      font-size: 14px;
+    }
+
+    .nav button.active {
+      background: var(--accent);
+      color: #111;
+    }
+
+    .routine-launch {
+      width: 100%;
+      text-align: left;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      border-radius: 16px;
+      display: block;
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .session-exercise {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--panel-2);
+      margin-bottom: 12px;
+    }
+
+    .set-grid {
+      display: grid;
+      grid-template-columns: 64px 1fr 1fr;
+      gap: 8px;
+      align-items: end;
+      margin-top: 10px;
+    }
+
+    .set-grid.header {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .set-label {
+      font-size: 13px;
+      color: var(--muted);
+      padding-bottom: 12px;
+    }
+
+    .lift-block {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .home-weight {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .mini-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
     }
 
     @media (max-width: 600px) {
-      .row.two, .row.three, .button-row {
+      .row.two, .row.three, .button-row, .nav, .home-weight {
         grid-template-columns: 1fr;
+      }
+      .set-grid {
+        grid-template-columns: 56px 1fr 1fr;
       }
       h1 { font-size: 28px; }
     }
@@ -245,20 +335,34 @@
 </head>
 <body>
   <div class="app">
+    <div class="nav">
+      <button id="navHome" class="active">Home</button>
+      <button id="navBuilder">Builder</button>
+      <button id="navSession">Workout</button>
+      <button id="navHistory">History</button>
+    </div>
+
     <div id="homeScreen" class="screen active">
       <h1>Strength Tracker</h1>
-      <div class="sub">Phase 1: create your custom routine templates. Build push, pull, legs, or any split you want.</div>
+      <div class="sub">Phase 2: start a routine, log sets live, and save the full workout.</div>
 
       <div class="card">
         <div class="section-title">
-          <h2>Start Here</h2>
+          <h2>Body Weight</h2>
         </div>
-        <button id="goToBuilderBtn">Create or Edit Routines</button>
+        <div class="home-weight">
+          <div>
+            <label for="bodyWeightInput">Today’s Body Weight</label>
+            <input id="bodyWeightInput" type="number" step="0.1" placeholder="185.4" />
+          </div>
+          <button id="saveWeightBtn">Save Weight</button>
+        </div>
+        <div id="latestWeightText" class="mini-note"></div>
       </div>
 
       <div class="card">
         <div class="section-title">
-          <h2>Your Routines</h2>
+          <h2>Start Workout</h2>
         </div>
         <div id="homeRoutineList" class="home-routines"></div>
       </div>
@@ -268,10 +372,9 @@
       <div class="card">
         <div class="section-title">
           <h2>Routine Builder</h2>
-          <button id="backHomeBtn" class="secondary" style="width:auto; padding:10px 12px;">Back</button>
         </div>
 
-        <div class="row single">
+        <div class="row">
           <div>
             <label for="routineName">Routine Name</label>
             <input id="routineName" type="text" placeholder="Push Day" />
@@ -288,7 +391,7 @@
         <h2>Add Exercise</h2>
 
         <div id="singleExerciseFields" class="superset-box">
-          <div class="row single">
+          <div class="row">
             <div>
               <label for="exerciseName">Exercise Name</label>
               <input id="exerciseName" type="text" placeholder="Incline Dumbbell Press" />
@@ -307,10 +410,10 @@
               <input id="supersetNameB" type="text" placeholder="Push-Up" />
             </div>
           </div>
-          <div class="muted" style="margin-top:10px;">This will be stored as one superset block with two separate lifts that you can both track later.</div>
+          <div class="muted" style="margin-top:10px;">Stored as one superset block so both lifts can be logged in the same round.</div>
         </div>
 
-        <div class="row two" style="margin-top: 12px;">
+        <div class="row three" style="margin-top: 12px;">
           <div>
             <label for="exerciseType">Exercise Type</label>
             <select id="exerciseType">
@@ -344,16 +447,57 @@
         <div id="routineList" class="routine-list"></div>
       </div>
     </div>
+
+    <div id="sessionScreen" class="screen">
+      <div class="card">
+        <div id="noSessionState" class="empty">No active workout. Start one from the Home screen.</div>
+
+        <div id="activeSessionContent" class="hidden">
+          <div class="session-header">
+            <div>
+              <h2 id="sessionTitle" style="margin:0 0 6px;"></h2>
+              <div id="sessionMeta" class="muted"></div>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="saveWorkoutBtn" class="success">Save Workout</button>
+            <button id="discardWorkoutBtn" class="danger">Discard Workout</button>
+          </div>
+
+          <div id="sessionExerciseList" class="session-list" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="historyScreen" class="screen">
+      <div class="card">
+        <div class="section-title">
+          <h2>Workout History</h2>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const STORAGE_KEY = 'strength-tracker-phase1-routines';
+    const ROUTINES_KEY = 'strength-tracker-routines-v2';
+    const SESSIONS_KEY = 'strength-tracker-sessions-v2';
+    const WEIGHT_KEY = 'strength-tracker-bodyweight-v1';
 
-    const homeScreen = document.getElementById('homeScreen');
-    const builderScreen = document.getElementById('builderScreen');
+    const screens = {
+      home: document.getElementById('homeScreen'),
+      builder: document.getElementById('builderScreen'),
+      session: document.getElementById('sessionScreen'),
+      history: document.getElementById('historyScreen')
+    };
 
-    const goToBuilderBtn = document.getElementById('goToBuilderBtn');
-    const backHomeBtn = document.getElementById('backHomeBtn');
+    const navButtons = {
+      home: document.getElementById('navHome'),
+      builder: document.getElementById('navBuilder'),
+      session: document.getElementById('navSession'),
+      history: document.getElementById('navHistory')
+    };
 
     const routineNameInput = document.getElementById('routineName');
     const exerciseTypeInput = document.getElementById('exerciseType');
@@ -373,12 +517,32 @@
     const exerciseList = document.getElementById('exerciseList');
     const routineList = document.getElementById('routineList');
     const homeRoutineList = document.getElementById('homeRoutineList');
+    const historyList = document.getElementById('historyList');
+
+    const noSessionState = document.getElementById('noSessionState');
+    const activeSessionContent = document.getElementById('activeSessionContent');
+    const sessionTitle = document.getElementById('sessionTitle');
+    const sessionMeta = document.getElementById('sessionMeta');
+    const sessionExerciseList = document.getElementById('sessionExerciseList');
+    const saveWorkoutBtn = document.getElementById('saveWorkoutBtn');
+    const discardWorkoutBtn = document.getElementById('discardWorkoutBtn');
+
+    const bodyWeightInput = document.getElementById('bodyWeightInput');
+    const saveWeightBtn = document.getElementById('saveWeightBtn');
+    const latestWeightText = document.getElementById('latestWeightText');
 
     let currentRoutineId = null;
     let draftExercises = [];
+    let activeSession = null;
 
     function uid() {
       return Math.random().toString(36).slice(2, 10);
+    }
+
+    function todayISO() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      return new Date(now - offset).toISOString().slice(0, 10);
     }
 
     function escapeHtml(value) {
@@ -390,24 +554,36 @@
         .replace(/'/g, '&#039;');
     }
 
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
     function formatRoutineSummary(routine) {
       const exercises = Array.isArray(routine.exercises) ? routine.exercises : [];
       const supersetCount = exercises.filter(ex => ex.type === 'superset').length;
-      return `${exercises.length} exercise${exercises.length === 1 ? '' : 's'} saved${supersetCount ? ` • ${supersetCount} superset${supersetCount === 1 ? '' : 's'}` : ''}`;
+      return `${exercises.length} exercise${exercises.length === 1 ? '' : 's'}${supersetCount ? ` • ${supersetCount} superset${supersetCount === 1 ? '' : 's'}` : ''}`;
     }
 
-    function loadRoutines() {
+    function getStoredArray(key) {
       try {
-        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        const parsed = JSON.parse(localStorage.getItem(key));
         return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
 
-    function saveRoutines(routines) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(routines));
+    function setStoredArray(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
     }
+
+    function loadRoutines() { return getStoredArray(ROUTINES_KEY); }
+    function saveRoutines(routines) { setStoredArray(ROUTINES_KEY, routines); }
+    function loadSessions() { return getStoredArray(SESSIONS_KEY); }
+    function saveSessions(sessions) { setStoredArray(SESSIONS_KEY, sessions); }
+    function loadWeights() { return getStoredArray(WEIGHT_KEY); }
+    function saveWeights(weights) { setStoredArray(WEIGHT_KEY, weights); }
 
     function updateExerciseTypeUI() {
       const isSuperset = exerciseTypeInput.value === 'superset';
@@ -415,12 +591,13 @@
       supersetFields.classList.toggle('hidden', !isSuperset);
     }
 
-    function showScreen(screen) {
-      homeScreen.classList.remove('active');
-      builderScreen.classList.remove('active');
-      screen.classList.add('active');
-      updateExerciseTypeUI();
+    function showScreen(name) {
+      Object.values(screens).forEach(screen => screen.classList.remove('active'));
+      Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+      screens[name].classList.add('active');
+      navButtons[name].classList.add('active');
       renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function clearExerciseFields() {
@@ -442,6 +619,14 @@
       renderDraftExercises();
     }
 
+    function createBlankSet() {
+      return { reps: '', weight: '' };
+    }
+
+    function buildLoggedSets(setCount) {
+      return Array.from({ length: Number(setCount) || 0 }, () => createBlankSet());
+    }
+
     function addExerciseToDraft() {
       const type = exerciseTypeInput.value;
       const targetSets = targetSetsInput.value.trim();
@@ -459,22 +644,14 @@
           return;
         }
 
-        draftExercises.push({
-          id: uid(),
-          type: 'single',
-          name,
-          targetSets,
-          targetReps
-        });
+        draftExercises.push({ id: uid(), type: 'single', name, targetSets, targetReps });
       } else {
         const nameA = supersetNameAInput.value.trim();
         const nameB = supersetNameBInput.value.trim();
-
         if (!nameA || !nameB) {
           alert('Enter both lifts for the superset.');
           return;
         }
-
         draftExercises.push({
           id: uid(),
           type: 'superset',
@@ -493,10 +670,12 @@
     }
 
     function moveExercise(index, direction) {
+      const list = activeSession ? activeSession.exercises : draftExercises;
       const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= draftExercises.length) return;
-      [draftExercises[index], draftExercises[newIndex]] = [draftExercises[newIndex], draftExercises[index]];
-      renderDraftExercises();
+      if (newIndex < 0 || newIndex >= list.length) return;
+      [list[index], list[newIndex]] = [list[newIndex], list[index]];
+      if (activeSession) renderActiveSession();
+      else renderDraftExercises();
     }
 
     function deleteExercise(id) {
@@ -561,11 +740,8 @@
       };
 
       const existingIndex = routines.findIndex(r => r.id === routinePayload.id);
-      if (existingIndex >= 0) {
-        routines[existingIndex] = routinePayload;
-      } else {
-        routines.push(routinePayload);
-      }
+      if (existingIndex >= 0) routines[existingIndex] = routinePayload;
+      else routines.push(routinePayload);
 
       saveRoutines(routines);
       currentRoutineId = routinePayload.id;
@@ -580,8 +756,7 @@
       routineNameInput.value = routine.name;
       draftExercises = JSON.parse(JSON.stringify(routine.exercises || []));
       renderDraftExercises();
-      showScreen(builderScreen);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showScreen('builder');
     }
 
     function deleteRoutine(id) {
@@ -608,9 +783,7 @@
           </div>
           <div>
             ${(routine.exercises || []).slice(0, 5).map(ex => {
-              const label = ex.type === 'superset'
-                ? `Superset: ${(ex.lifts || []).map(l => l.name).join(' + ')}`
-                : ex.name;
+              const label = ex.type === 'superset' ? `Superset: ${(ex.lifts || []).map(l => l.name).join(' + ')}` : ex.name;
               return `<span class="pill">${escapeHtml(label)}</span>`;
             }).join('')}
             ${(routine.exercises || []).length > 5 ? '<span class="pill">…</span>' : ''}
@@ -623,48 +796,259 @@
       `).join('');
     }
 
+    function startWorkout(routineId) {
+      const routine = loadRoutines().find(r => r.id === routineId);
+      if (!routine) return;
+
+      activeSession = {
+        id: uid(),
+        date: todayISO(),
+        routineId: routine.id,
+        routineName: routine.name,
+        bodyWeight: getWeightForDate(todayISO()) || '',
+        exercises: (routine.exercises || []).map(ex => {
+          if (ex.type === 'superset') {
+            return {
+              id: uid(),
+              templateId: ex.id,
+              type: 'superset',
+              name: ex.name,
+              targetSets: ex.targetSets,
+              targetReps: ex.targetReps,
+              lifts: (ex.lifts || []).map(lift => ({
+                id: uid(),
+                name: lift.name,
+                sets: buildLoggedSets(ex.targetSets)
+              }))
+            };
+          }
+          return {
+            id: uid(),
+            templateId: ex.id,
+            type: 'single',
+            name: ex.name,
+            targetSets: ex.targetSets,
+            targetReps: ex.targetReps,
+            sets: buildLoggedSets(ex.targetSets)
+          };
+        })
+      };
+
+      showScreen('session');
+    }
+
     function renderHomeRoutines() {
       const routines = loadRoutines();
       if (!routines.length) {
-        homeRoutineList.innerHTML = '<div class="empty">No routines yet. Tap “Create or Edit Routines” to make your first one.</div>';
+        homeRoutineList.innerHTML = '<div class="empty">No routines yet. Go to Builder and make your first one.</div>';
         return;
       }
 
       homeRoutineList.innerHTML = routines.map(routine => `
-        <button onclick="editRoutine('${routine.id}')">
+        <button class="routine-launch" onclick="startWorkout('${routine.id}')">
           <div style="font-size:17px; font-weight:700; margin-bottom:4px;">${escapeHtml(routine.name)}</div>
           <div class="muted">${escapeHtml(formatRoutineSummary(routine))}</div>
         </button>
       `).join('');
     }
 
+    function renderActiveSession() {
+      if (!activeSession) {
+        noSessionState.classList.remove('hidden');
+        activeSessionContent.classList.add('hidden');
+        return;
+      }
+
+      noSessionState.classList.add('hidden');
+      activeSessionContent.classList.remove('hidden');
+      sessionTitle.textContent = activeSession.routineName;
+      sessionMeta.textContent = `${formatDate(activeSession.date)} • ${activeSession.exercises.length} exercise${activeSession.exercises.length === 1 ? '' : 's'}`;
+
+      sessionExerciseList.innerHTML = activeSession.exercises.map((exercise, exerciseIndex) => {
+        const header = exercise.type === 'superset'
+          ? `Superset: ${escapeHtml((exercise.lifts || []).map(l => l.name).join(' + '))}`
+          : escapeHtml(exercise.name);
+
+        const targetText = exercise.type === 'superset'
+          ? `${escapeHtml(String(exercise.targetSets))} rounds × ${escapeHtml(exercise.targetReps || 'custom reps')}`
+          : `${escapeHtml(String(exercise.targetSets))} sets × ${escapeHtml(exercise.targetReps || 'custom reps')}`;
+
+        let body = '';
+        if (exercise.type === 'single') {
+          body = renderSetInputs(exercise.sets, exerciseIndex, null, exercise.name);
+        } else {
+          body = (exercise.lifts || []).map((lift, liftIndex) => `
+            <div class="lift-block">
+              <div class="exercise-name" style="font-size:15px; margin-bottom:4px;">${escapeHtml(lift.name)}</div>
+              ${renderSetInputs(lift.sets, exerciseIndex, liftIndex, lift.name)}
+            </div>
+          `).join('');
+        }
+
+        return `
+          <div class="session-exercise">
+            <div class="session-top">
+              <div>
+                <div class="session-name">${exerciseIndex + 1}. ${header}</div>
+                <div class="muted">Target: ${targetText}</div>
+              </div>
+            </div>
+            ${body}
+            <div class="controls">
+              <button class="secondary" onclick="moveExercise(${exerciseIndex}, -1)">Move Up</button>
+              <button class="secondary" onclick="moveExercise(${exerciseIndex}, 1)">Move Down</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSetInputs(sets, exerciseIndex, liftIndex, label) {
+      return `
+        <div class="set-grid header">
+          <div>Set</div>
+          <div>Reps</div>
+          <div>Weight</div>
+        </div>
+        ${(sets || []).map((set, setIndex) => `
+          <div class="set-grid">
+            <div class="set-label">${setIndex + 1}</div>
+            <div>
+              <input type="number" inputmode="numeric" placeholder="8" value="${escapeHtml(set.reps || '')}" oninput="updateSetField(${exerciseIndex}, ${liftIndex === null ? 'null' : liftIndex}, ${setIndex}, 'reps', this.value)" />
+            </div>
+            <div>
+              <input type="number" inputmode="decimal" step="0.1" placeholder="135" value="${escapeHtml(set.weight || '')}" oninput="updateSetField(${exerciseIndex}, ${liftIndex === null ? 'null' : liftIndex}, ${setIndex}, 'weight', this.value)" />
+            </div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function updateSetField(exerciseIndex, liftIndex, setIndex, field, value) {
+      if (!activeSession) return;
+      const exercise = activeSession.exercises[exerciseIndex];
+      if (!exercise) return;
+
+      if (liftIndex === null) {
+        exercise.sets[setIndex][field] = value;
+      } else {
+        exercise.lifts[liftIndex].sets[setIndex][field] = value;
+      }
+    }
+
+    function discardWorkout() {
+      activeSession = null;
+      renderActiveSession();
+    }
+
+    function saveWorkout() {
+      if (!activeSession) return;
+      const sessions = loadSessions();
+      sessions.unshift(JSON.parse(JSON.stringify(activeSession)));
+      saveSessions(sessions);
+      activeSession = null;
+      renderAll();
+      showScreen('history');
+      alert('Workout saved.');
+    }
+
+    function renderHistory() {
+      const sessions = loadSessions();
+      if (!sessions.length) {
+        historyList.innerHTML = '<div class="empty">No workouts saved yet. Start a routine from Home.</div>';
+        return;
+      }
+
+      historyList.innerHTML = sessions.map(session => `
+        <div class="history-item">
+          <div class="history-top">
+            <div>
+              <div class="history-name">${escapeHtml(session.routineName)}</div>
+              <div class="muted">${formatDate(session.date)} • ${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'}</div>
+            </div>
+          </div>
+          <div>
+            ${(session.exercises || []).slice(0, 4).map(ex => {
+              const label = ex.type === 'superset' ? `Superset: ${(ex.lifts || []).map(l => l.name).join(' + ')}` : ex.name;
+              return `<span class="pill">${escapeHtml(label)}</span>`;
+            }).join('')}
+            ${(session.exercises || []).length > 4 ? '<span class="pill">…</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getWeightForDate(date) {
+      const entry = loadWeights().find(item => item.date === date);
+      return entry ? entry.weight : '';
+    }
+
+    function saveBodyWeight() {
+      const weight = bodyWeightInput.value.trim();
+      if (!weight) {
+        alert('Enter body weight first.');
+        return;
+      }
+      const date = todayISO();
+      const weights = loadWeights().filter(item => item.date !== date);
+      weights.unshift({ date, weight });
+      saveWeights(weights);
+      if (activeSession && activeSession.date === date) activeSession.bodyWeight = weight;
+      renderWeightSummary();
+      alert('Body weight saved.');
+    }
+
+    function renderWeightSummary() {
+      const weights = loadWeights();
+      if (!weights.length) {
+        latestWeightText.textContent = 'No body weight saved yet.';
+        return;
+      }
+      const latest = [...weights].sort((a, b) => b.date.localeCompare(a.date))[0];
+      latestWeightText.textContent = `Latest: ${latest.weight} lb on ${formatDate(latest.date)}`;
+      if (latest.date === todayISO()) bodyWeightInput.value = latest.weight;
+    }
+
     function renderAll() {
+      updateExerciseTypeUI();
       renderDraftExercises();
       renderSavedRoutines();
       renderHomeRoutines();
+      renderActiveSession();
+      renderHistory();
+      renderWeightSummary();
     }
 
     function runDevTests() {
       console.assert(escapeHtml('<script>') === '&lt;script&gt;', 'escapeHtml should escape angle brackets');
-      console.assert(formatRoutineSummary({ exercises: [] }) === '0 exercises saved', 'summary should handle empty routines');
+      console.assert(formatRoutineSummary({ exercises: [] }) === '0 exercises', 'summary should handle empty routines');
       console.assert(
-        formatRoutineSummary({ exercises: [{ type: 'single' }, { type: 'superset' }] }) === '2 exercises saved • 1 superset',
+        formatRoutineSummary({ exercises: [{ type: 'single' }, { type: 'superset' }] }) === '2 exercises • 1 superset',
         'summary should count supersets correctly'
       );
+      console.assert(buildLoggedSets(3).length === 3, 'set builder should create correct number of sets');
     }
 
     window.moveExercise = moveExercise;
     window.deleteExercise = deleteExercise;
     window.editRoutine = editRoutine;
     window.deleteRoutine = deleteRoutine;
+    window.startWorkout = startWorkout;
+    window.updateSetField = updateSetField;
 
-    goToBuilderBtn.addEventListener('click', () => showScreen(builderScreen));
-    backHomeBtn.addEventListener('click', () => showScreen(homeScreen));
+    navButtons.home.addEventListener('click', () => showScreen('home'));
+    navButtons.builder.addEventListener('click', () => showScreen('builder'));
+    navButtons.session.addEventListener('click', () => showScreen('session'));
+    navButtons.history.addEventListener('click', () => showScreen('history'));
+
     addExerciseBtn.addEventListener('click', addExerciseToDraft);
     resetExerciseBtn.addEventListener('click', clearExerciseFields);
     exerciseTypeInput.addEventListener('change', updateExerciseTypeUI);
     saveRoutineBtn.addEventListener('click', saveCurrentRoutine);
     clearRoutineBtn.addEventListener('click', resetRoutineBuilder);
+    saveWorkoutBtn.addEventListener('click', saveWorkout);
+    discardWorkoutBtn.addEventListener('click', discardWorkout);
+    saveWeightBtn.addEventListener('click', saveBodyWeight);
 
     updateExerciseTypeUI();
     renderAll();
