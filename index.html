@@ -525,18 +525,10 @@
         <div class="section-title">
           <h2>Progress</h2>
         </div>
-        <div class="row three">
+        <div class="row two">
           <div>
             <label for="progressExerciseSelect">Exercise</label>
             <select id="progressExerciseSelect"></select>
-          </div>
-          <div>
-            <label for="progressMetricSelect">Metric</label>
-            <select id="progressMetricSelect">
-              <option value="best_weight">Best Weight</option>
-              <option value="best_reps">Best Reps</option>
-              <option value="volume">Volume</option>
-            </select>
           </div>
           <div>
             <label for="progressRangeSelect">Range</label>
@@ -634,8 +626,7 @@
     const latestWeightText = document.getElementById('latestWeightText');
 
     const progressExerciseSelect = document.getElementById('progressExerciseSelect');
-    const progressMetricSelect = document.getElementById('progressMetricSelect');
-    const progressRangeSelect = document.getElementById('progressRangeSelect');
+        const progressRangeSelect = document.getElementById('progressRangeSelect');
     const toggleBodyWeightChart = document.getElementById('toggleBodyWeightChart');
     const bodyWeightChartWrap = document.getElementById('bodyWeightChartWrap');
     const bodyWeightChartCanvas = document.getElementById('bodyWeightChart');
@@ -1218,7 +1209,7 @@
       return date >= start;
     }
 
-    function buildExerciseProgressPoints(exerciseName, metric, range) {
+    function buildExerciseProgressPoints(exerciseName, range) {
       const sessions = loadSessions().sort((a, b) => a.date.localeCompare(b.date));
       const points = [];
 
@@ -1238,19 +1229,11 @@
 
         const parsedSets = sets
           .map(set => ({ reps: Number(set.reps) || 0, weight: Number(set.weight) || 0 }))
-          .filter(set => set.reps > 0 || set.weight > 0);
+          .filter(set => set.weight > 0);
 
         if (!parsedSets.length) return;
 
-        let value = 0;
-        if (metric === 'best_reps') {
-          value = Math.max(...parsedSets.map(set => set.reps));
-        } else if (metric === 'volume') {
-          value = parsedSets.reduce((sum, set) => sum + (set.reps * set.weight), 0);
-        } else {
-          value = Math.max(...parsedSets.map(set => set.weight));
-        }
-
+        const value = Math.max(...parsedSets.map(set => set.weight));
         points.push({ date: session.date, value });
       });
 
@@ -1327,7 +1310,6 @@
 
     function renderExerciseChart() {
       const exerciseName = progressExerciseSelect.value;
-      const metric = progressMetricSelect.value;
       const range = progressRangeSelect.value || 'all';
 
       if (!exerciseName) {
@@ -1340,10 +1322,10 @@
         return;
       }
 
-      const points = buildExerciseProgressPoints(exerciseName, metric, range);
+      const points = buildExerciseProgressPoints(exerciseName, range);
       const labels = points.map(point => formatDate(point.date));
       const data = points.map(point => point.value);
-      const metricLabel = metric === 'best_reps' ? 'Best Reps' : metric === 'volume' ? 'Volume' : 'Best Weight';
+      const metricLabel = 'Best Weight';
 
       exerciseChartTitle.textContent = `${exerciseName} Trend`;
 
@@ -1372,7 +1354,7 @@
       });
 
       exerciseChartSummary.textContent = points.length
-        ? `${metricLabel}: latest ${points[points.length - 1].value}${metric === 'volume' || metric === 'best_reps' ? '' : ' lb'} • ${points.length} logged workout${points.length === 1 ? '' : 's'} in range`
+        ? `${metricLabel}: latest ${points[points.length - 1].value} lb • ${points.length} logged workout${points.length === 1 ? '' : 's'} in range`
         : `No logged sets found yet for ${exerciseName} in this range.`;
     }
 
@@ -1440,8 +1422,7 @@
     saveWeightBtn.addEventListener('click', saveBodyWeight);
 
     progressExerciseSelect.addEventListener('change', renderExerciseChart);
-    progressMetricSelect.addEventListener('change', renderExerciseChart);
-    progressRangeSelect.addEventListener('change', renderProgress);
+        progressRangeSelect.addEventListener('change', renderProgress);
     toggleBodyWeightChart.addEventListener('change', renderBodyWeightChart);
 
     sessionDateInput.addEventListener('input', () => {
@@ -1463,3 +1444,4 @@
   </script>
 </body>
 </html>
+
