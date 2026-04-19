@@ -237,7 +237,7 @@
 
     .nav {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 8px;
       margin-bottom: 14px;
     }
@@ -340,6 +340,7 @@
       <button id="navBuilder">Builder</button>
       <button id="navSession">Workout</button>
       <button id="navHistory">History</button>
+      <button id="navProgress">Progress</button>
     </div>
 
     <div id="homeScreen" class="screen active">
@@ -492,8 +493,47 @@
         <div id="historyList" class="history-list"></div>
       </div>
     </div>
+
+    <div id="progressScreen" class="screen">
+      <div class="card">
+        <div class="section-title">
+          <h2>Progress</h2>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="progressExerciseSelect">Exercise</label>
+            <select id="progressExerciseSelect"></select>
+          </div>
+          <div>
+            <label for="progressMetricSelect">Metric</label>
+            <select id="progressMetricSelect">
+              <option value="best_weight">Best Weight</option>
+              <option value="best_reps">Best Reps</option>
+              <option value="volume">Volume</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>Body Weight Trend</h2>
+        </div>
+        <canvas id="bodyWeightChart" height="220"></canvas>
+        <div id="bodyWeightSummary" class="mini-note"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2 id="exerciseChartTitle">Exercise Trend</h2>
+        </div>
+        <canvas id="exerciseChart" height="220"></canvas>
+        <div id="exerciseChartSummary" class="mini-note"></div>
+      </div>
+    </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const ROUTINES_KEY = 'strength-tracker-routines-v2';
     const SESSIONS_KEY = 'strength-tracker-sessions-v2';
@@ -503,14 +543,16 @@
       home: document.getElementById('homeScreen'),
       builder: document.getElementById('builderScreen'),
       session: document.getElementById('sessionScreen'),
-      history: document.getElementById('historyScreen')
+      history: document.getElementById('historyScreen'),
+      progress: document.getElementById('progressScreen')
     };
 
     const navButtons = {
       home: document.getElementById('navHome'),
       builder: document.getElementById('navBuilder'),
       session: document.getElementById('navSession'),
-      history: document.getElementById('navHistory')
+      history: document.getElementById('navHistory'),
+      progress: document.getElementById('navProgress')
     };
 
     const routineNameInput = document.getElementById('routineName');
@@ -546,11 +588,20 @@
     const bodyWeightInput = document.getElementById('bodyWeightInput');
     const saveWeightBtn = document.getElementById('saveWeightBtn');
     const latestWeightText = document.getElementById('latestWeightText');
+    const progressExerciseSelect = document.getElementById('progressExerciseSelect');
+    const progressMetricSelect = document.getElementById('progressMetricSelect');
+    const bodyWeightChartCanvas = document.getElementById('bodyWeightChart');
+    const exerciseChartCanvas = document.getElementById('exerciseChart');
+    const bodyWeightSummary = document.getElementById('bodyWeightSummary');
+    const exerciseChartTitle = document.getElementById('exerciseChartTitle');
+    const exerciseChartSummary = document.getElementById('exerciseChartSummary');
 
     let currentRoutineId = null;
     let draftExercises = [];
     let activeSession = null;
     let editingSessionId = null;
+    let bodyWeightChart = null;
+    let exerciseChart = null;
 
     function uid() {
       return Math.random().toString(36).slice(2, 10);
@@ -1022,10 +1073,187 @@
           </div>
           <div class="controls">
             <button class="secondary" onclick="editHistoryWorkout('${session.id}')">Edit</button>
+            <button class="secondary" onclick="openProgressFromSession('${session.id}')">View Progress</button>
             <button class="danger" onclick="deleteHistoryWorkout('${session.id}')">Delete</button>
           </div>
         </div>
       `).join('');
+    }
+
+    function getAllExerciseNames() {
+      const sessions = loadSessions();
+      const names = new Set();
+      sessions.forEach(session => {
+        (session.exercises || []).forEach(exercise => {
+          if (exercise.type === 'superset') {
+            (exercise.lifts || []).forEach(lift => names.add(lift.name));
+          } else if (exercise.name) {
+            names.add(exercise.name);
+          }
+        });
+      });
+      return Array.from(names).sort((a, b) => a.localeCompare(b));
+    }
+
+    function buildExerciseProgressPoints(exerciseName, metric) {
+      const sessions = loadSessions().sort((a, b) => a.date.localeCompare(b.date));
+      const points = [];
+
+      sessions.forEach(session => {
+        let sets = [];
+        (session.exercises || []).forEach(exercise => {
+          if (exercise.type === 'superset') {
+            (exercise.lifts || []).forEach(lift => {
+              if (lift.name === exerciseName) {
+                sets = sets.concat(lift.sets || []);
+              }
+            });
+          } else if (exercise.name === exerciseName) {
+            sets = sets.concat(exercise.sets || []);
+          }
+        });
+
+        const parsedSets = sets
+          .map(set => ({ reps: Number(set.reps) || 0, weight: Number(set.weight) || 0 }))
+          .filter(set => set.reps > 0 || set.weight > 0);
+
+        if (!parsedSets.length) return;
+
+        let value = 0;
+        if (metric === 'best_reps') {
+          value = Math.max(...parsedSets.map(set => set.reps));
+        } else if (metric === 'volume') {
+          value = parsedSets.reduce((sum, set) => sum + (set.reps * set.weight), 0);
+        } else {
+          value = Math.max(...parsedSets.map(set => set.weight));
+        }
+
+        points.push({ date: session.date, value });
+      });
+
+      return points;
+    }
+
+    function renderBodyWeightChart() {
+      const weights = loadWeights().sort((a, b) => a.date.localeCompare(b.date));
+      const labels = weights.map(item => formatDate(item.date));
+      const data = weights.map(item => Number(item.weight));
+
+      if (bodyWeightChart) bodyWeightChart.destroy();
+      bodyWeightChart = new Chart(bodyWeightChartCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Body Weight',
+            data,
+            borderWidth: 2,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#a1a1aa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#a1a1aa' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+
+      bodyWeightSummary.textContent = weights.length
+        ? `Latest: ${weights[weights.length - 1].weight} lb • ${weights.length} logged day${weights.length === 1 ? '' : 's'}`
+        : 'No body weight entries yet.';
+    }
+
+    function renderExerciseProgressControls() {
+      const exerciseNames = getAllExerciseNames();
+      const currentValue = progressExerciseSelect.value;
+
+      if (!exerciseNames.length) {
+        progressExerciseSelect.innerHTML = '<option value="">No exercises logged yet</option>';
+        exerciseChartTitle.textContent = 'Exercise Trend';
+        exerciseChartSummary.textContent = 'Save a workout first to see exercise progress.';
+        if (exerciseChart) {
+          exerciseChart.destroy();
+          exerciseChart = null;
+        }
+        return;
+      }
+
+      progressExerciseSelect.innerHTML = exerciseNames
+        .map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+        .join('');
+
+      if (exerciseNames.includes(currentValue)) progressExerciseSelect.value = currentValue;
+      else progressExerciseSelect.value = exerciseNames[0];
+    }
+
+    function renderExerciseChart() {
+      const exerciseName = progressExerciseSelect.value;
+      const metric = progressMetricSelect.value;
+
+      if (!exerciseName) {
+        exerciseChartTitle.textContent = 'Exercise Trend';
+        exerciseChartSummary.textContent = 'Choose an exercise once you have workout data.';
+        if (exerciseChart) {
+          exerciseChart.destroy();
+          exerciseChart = null;
+        }
+        return;
+      }
+
+      const points = buildExerciseProgressPoints(exerciseName, metric);
+      const labels = points.map(point => formatDate(point.date));
+      const data = points.map(point => point.value);
+      const metricLabel = metric === 'best_reps' ? 'Best Reps' : metric === 'volume' ? 'Volume' : 'Best Weight';
+
+      exerciseChartTitle.textContent = `${exerciseName} Trend`;
+
+      if (exerciseChart) exerciseChart.destroy();
+      exerciseChart = new Chart(exerciseChartCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: metricLabel,
+            data,
+            borderWidth: 2,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#a1a1aa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#a1a1aa' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+
+      exerciseChartSummary.textContent = points.length
+        ? `${metricLabel}: latest ${points[points.length - 1].value}${metric === 'volume' ? '' : ' lb'} • ${points.length} logged workout${points.length === 1 ? '' : 's'}`
+        : `No logged sets found yet for ${exerciseName}.`;
+    }
+
+    function renderProgress() {
+      renderBodyWeightChart();
+      renderExerciseProgressControls();
+      renderExerciseChart();
+    }
+
+    function openProgressFromSession(sessionId) {
+      const session = loadSessions().find(item => item.id === sessionId);
+      if (!session) return;
+      const firstExercise = (session.exercises || []).flatMap(ex => ex.type === 'superset' ? (ex.lifts || []).map(l => l.name) : [ex.name]).filter(Boolean)[0];
+      showScreen('progress');
+      if (firstExercise) {
+        progressExerciseSelect.value = firstExercise;
+        renderExerciseChart();
+      }
     }
 
     function editHistoryWorkout(sessionId) {
@@ -1085,6 +1313,7 @@
       renderActiveSession();
       renderHistory();
       renderWeightSummary();
+      renderProgress();
     }
 
     function runDevTests() {
@@ -1096,6 +1325,7 @@
       );
       console.assert(buildLoggedSets(3).length === 3, 'set builder should create correct number of sets');
       console.assert(todayISO().length === 10, 'todayISO should return YYYY-MM-DD');
+      console.assert(Array.isArray(getAllExerciseNames()), 'exercise names should be returned as an array');
     }
 
     window.moveExercise = moveExercise;
@@ -1106,11 +1336,13 @@
     window.updateSetField = updateSetField;
     window.editHistoryWorkout = editHistoryWorkout;
     window.deleteHistoryWorkout = deleteHistoryWorkout;
+    window.openProgressFromSession = openProgressFromSession;
 
     navButtons.home.addEventListener('click', () => showScreen('home'));
     navButtons.builder.addEventListener('click', () => showScreen('builder'));
     navButtons.session.addEventListener('click', () => showScreen('session'));
     navButtons.history.addEventListener('click', () => showScreen('history'));
+    navButtons.progress.addEventListener('click', () => showScreen('progress'));
 
     addExerciseBtn.addEventListener('click', addExerciseToDraft);
     resetExerciseBtn.addEventListener('click', clearExerciseFields);
@@ -1120,6 +1352,8 @@
     saveWorkoutBtn.addEventListener('click', saveWorkout);
     discardWorkoutBtn.addEventListener('click', discardWorkout);
     saveWeightBtn.addEventListener('click', saveBodyWeight);
+    progressExerciseSelect.addEventListener('change', renderExerciseChart);
+    progressMetricSelect.addEventListener('change', renderExerciseChart);
     sessionDateInput.addEventListener('input', () => {
       if (!activeSession) return;
       activeSession.date = sessionDateInput.value || todayISO();
